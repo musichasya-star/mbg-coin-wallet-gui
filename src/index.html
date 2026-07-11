@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MBG Coin Wallet</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <section id="login-screen" class="login-screen">
+    <div class="login-card">
+      <div class="brand login-brand"><div class="brand-mark">M</div><div><strong>MBG Coin</strong><span>Wallet Desktop</span></div></div>
+      <h1>Unlock your wallet</h1>
+      <p class="muted">Wallet dibuka secara lokal. Password tidak dikirim ke node atau server.</p>
+      <label class="field-label" for="wallet-file">Wallet file</label>
+      <div class="input-row"><input id="wallet-file" class="text-input" type="text" readonly placeholder="Pilih file wallet (.wallet)" /><button id="browse-wallet-file" class="button secondary">Browse</button></div>
+      <label class="field-label" for="wallet-password">Wallet password</label>
+      <input id="wallet-password" class="text-input" type="password" autocomplete="current-password" placeholder="Masukkan password wallet" />
+      <label class="field-label" for="login-daemon">MBG node (HTTPS URL atau host:port lokal)</label>
+      <input id="login-daemon" class="text-input" type="text" value="https://node1.mbgcoin.my.id" placeholder="https://node1.mbgcoin.my.id" />
+      <button id="unlock-button" class="button primary full-width">Unlock wallet</button>
+      <button id="import-button" class="button secondary full-width">Import existing wallet</button>
+      <button id="create-button" class="button secondary full-width">Create new wallet</button>
+      <p id="login-message" class="login-message" role="status"></p>
+      <small class="muted">Node publik dihubungkan melalui TLS bridge lokal. Private key dan password tidak pernah dikirim ke node.</small>
+    </div>
+  </section>
+  <section id="create-screen" class="login-screen" style="display:none">
+    <div class="login-card">
+      <div class="brand login-brand"><div class="brand-mark">M</div><div><strong>MBG Coin</strong><span>Create wallet</span></div></div>
+      <h1>Create new wallet</h1>
+      <p class="muted">Wallet dibuat lokal oleh binary MBG. Simpan backup dan password secara offline.</p>
+      <label class="field-label" for="create-folder">Folder penyimpanan</label>
+      <div class="input-row"><input id="create-folder" class="text-input" type="text" readonly placeholder="Pilih folder penyimpanan" /><button id="browse-folder" class="button secondary">Browse</button></div>
+      <label class="field-label" for="create-name">Nama wallet</label>
+      <input id="create-name" class="text-input" type="text" value="mbg-wallet" placeholder="Contoh: mbg-wallet-utama" />
+      <label class="field-label" for="create-password">Password wallet</label>
+      <input id="create-password" class="text-input" type="password" autocomplete="new-password" />
+      <label class="field-label" for="create-password-confirm">Konfirmasi password</label>
+      <input id="create-password-confirm" class="text-input" type="password" autocomplete="new-password" />
+      <button id="generate-button" class="button primary full-width">Generate wallet</button>
+      <button id="back-login-button" class="button secondary full-width">Back to login</button>
+      <p id="create-message" class="login-message" role="status"></p>
+    </div>
+  </section>
+  <section id="import-screen" class="login-screen" style="display:none">
+    <div class="login-card">
+      <div class="brand login-brand"><div class="brand-mark">M</div><div><strong>MBG Coin</strong><span>Import wallet</span></div></div>
+      <h1>Import existing wallet</h1>
+      <p class="muted">Mnemonic dan private keys diproses secara lokal. Pastikan komputer bebas malware.</p>
+      <label class="field-label" for="import-method">Metode import</label>
+      <select id="import-method" class="text-input"><option value="mnemonic">Mnemonic seed (25 kata)</option><option value="keys">Private spend/view keys</option></select>
+      <div id="import-mnemonic-fields"><label class="field-label" for="import-mnemonic">Mnemonic seed</label><textarea id="import-mnemonic" class="address-box" autocomplete="off" spellcheck="false" placeholder="Masukkan 25 kata mnemonic MBG"></textarea></div>
+      <div id="import-key-fields" style="display:none"><label class="field-label" for="import-spend-key">Private spend key</label><input id="import-spend-key" class="text-input" type="password" autocomplete="off"/><label class="field-label" for="import-view-key">Private view key</label><input id="import-view-key" class="text-input" type="password" autocomplete="off"/></div>
+      <div class="restore-warning"><strong>Simpan mnemonic secara offline</strong><span>Jangan simpan mnemonic/private key di screenshot, cloud, email, atau chat. MBG Coin tidak dapat memulihkan seed yang hilang.</span></div>
+      <label class="field-label" for="restore-mode">Restore/rescan mulai dari</label>
+      <select id="restore-mode" class="text-input"><option value="genesis">Genesis (full rescan)</option><option value="height">Block height</option><option value="date">Tanggal wallet dibuat</option></select>
+      <div id="restore-height-fields" style="display:none"><label class="field-label" for="restore-height">Restore height</label><input id="restore-height" class="text-input" type="number" min="0" step="1" placeholder="Contoh: 10000"/></div>
+      <div id="restore-date-fields" style="display:none"><label class="field-label" for="restore-date">Restore date</label><input id="restore-date" class="text-input" type="date"/></div>
+      <label class="field-label" for="expected-address">Address lama untuk verifikasi (disarankan)</label><textarea id="expected-address" class="address-box compact" placeholder="RMBG..."></textarea>
+      <label class="field-label" for="import-folder">Folder penyimpanan</label>
+      <div class="input-row"><input id="import-folder" class="text-input" readonly placeholder="Pilih folder penyimpanan"/><button id="import-browse-folder" class="button secondary">Browse</button></div>
+      <label class="field-label" for="import-name">Nama wallet</label><input id="import-name" class="text-input" value="mbg-wallet-import"/>
+      <label class="field-label" for="import-password">Password baru</label><input id="import-password" class="text-input" type="password" autocomplete="new-password"/>
+      <label class="field-label" for="import-password-confirm">Konfirmasi password</label><input id="import-password-confirm" class="text-input" type="password" autocomplete="new-password"/>
+      <label class="confirm-check"><input id="offline-backup-confirm" type="checkbox"/> Saya memahami mnemonic/private key harus disimpan secara offline.</label>
+      <button id="import-submit" class="button primary full-width">Restore & verify wallet</button>
+      <button id="import-back-login" class="button secondary full-width">Back to login</button>
+      <p id="import-message" class="login-message" role="status"></p>
+    </div>
+  </section>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="brand"><div class="brand-mark">M</div><div><strong>MBG Coin</strong><span>Wallet Desktop</span></div></div>
+      <nav id="navigation" aria-label="Navigasi wallet">
+        <button class="nav-item active" data-page="dashboard">⌂ <span>Dashboard</span></button>
+        <button class="nav-item" data-page="send">↗ <span>Send</span></button>
+        <button class="nav-item" data-page="receive">↙ <span>Receive</span></button>
+        <button class="nav-item" data-page="transactions">≡ <span>Transactions</span></button>
+        <button class="nav-item" data-page="optimize">&#10227; <span>Optimize Wallet</span></button>
+        <button class="nav-item" data-page="mining">◈ <span>Mining</span></button>
+        <button class="nav-item" data-page="security">▰ <span>Backup & Security</span></button>
+        <button class="nav-item" data-page="settings">⚙ <span>Settings</span></button>
+      </nav>
+      <div class="sidebar-footer"><span class="dot"></span> Testnet node connected</div>
+    </aside>
+    <main class="main-content">
+      <header class="topbar"><div><p class="eyebrow">MBG COIN WALLET</p><h1 id="page-title">Dashboard</h1></div><div class="top-actions"><span class="network-pill"><i></i> Testnet</span><button class="icon-button" id="lock-button" title="Kunci wallet">▣</button></div></header>
+      <section id="page-content" aria-live="polite"></section>
+    </main>
+  </div>
+  <script src="renderer/app.js"></script>
+</body>
+</html>

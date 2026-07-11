@@ -1,0 +1,21 @@
+[Unit]
+Description=MBG Coin public node 2
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=mbgcoin
+Group=mbgcoin
+ExecStart=/opt/mbgcoin/bin/mbgcoind --data-dir=/var/lib/mbgcoin/node2 --p2p-bind-ip=0.0.0.0 --p2p-bind-port=52680 --rpc-bind-ip=127.0.0.1 --rpc-bind-port=52681 --allow-local-ip --add-priority-node=139.162.23.27:52680 --restricted-rpc --no-console --log-file=/var/log/mbgcoin/node2.log --log-level=2
+Restart=on-failure
+RestartSec=5
+TimeoutStopSec=60
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ProtectHome=true
+ReadWritePaths=/var/lib/mbgcoin /var/log/mbgcoin
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,41 @@
+# Dependencies and build output
+node_modules/
+dist/
+release/
+out/
+
+# Runtime logs and caches
+*.log
+logs/
+Cache/
+Code Cache/
+GPUCache/
+blob_storage/
+
+# Wallet secrets and local blockchain data
+*.wallet
+*.keys
+*.wallet-backup
+blockchain/
+poolstate.dat*
+transaction-history.json
+mbg-wallet-config.json
+
+# Credentials and local environment
+.env
+.env.*
+*.pem
+*.key
+ssh-askpass.*
+
+# Backups and temporary files
+*-backup-*/
+*.bak
+*.tmp
+*.temp
+
+# OS and editor metadata
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

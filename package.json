@@ -1,0 +1,18 @@
+{
+  "name": "mbg-wallet-gui",
+  "version": "0.1.0",
+  "description": "MBG Coin Wallet GUI for Windows",
+  "main": "src/main.js",
+  "private": true,
+  "scripts": {
+    "start": "electron .",
+    "test": "node --check src/main.js && node --check src/preload.js && node --check src/renderer/app.js"
+  },
+  "devDependencies": {
+    "electron": "^31.7.7"
+  },
+  "dependencies": {
+    "json-bigint": "^1.0.0",
+    "qrcode": "^1.5.4"
+  }
+}

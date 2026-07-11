@@ -1,0 +1,31 @@
+const { contextBridge, ipcRenderer } = require('electron');
+
+contextBridge.exposeInMainWorld('mbgWallet', {
+  getNodeInfo: (rpcUrl) => ipcRenderer.invoke('node-info', rpcUrl),
+  getPublicNodeStatus: () => ipcRenderer.invoke('public-node-status'),
+  generateQrCode: (text) => ipcRenderer.invoke('qr-code', text),
+  copyText: (text) => ipcRenderer.invoke('copy-text', text),
+  openTransaction: (hash) => ipcRenderer.invoke('open-transaction', hash),
+  loadTransactionCache: (address) => ipcRenderer.invoke('transaction-cache-load', address),
+  saveTransactionCache: (address, transactions) => ipcRenderer.invoke('transaction-cache-save', address, transactions),
+  readConfig: () => ipcRenderer.invoke('config-read'),
+  writeConfig: (config) => ipcRenderer.invoke('config-write', config),
+  checkWalletBinary: (binaryPath) => ipcRenderer.invoke('wallet-check', binaryPath),
+  readWalletBalance: (request) => ipcRenderer.invoke('wallet-balance', request),
+  createWallet: (request) => ipcRenderer.invoke('wallet-create', request),
+  importWallet: (request) => ipcRenderer.invoke('wallet-import', request),
+  selectWalletFolder: () => ipcRenderer.invoke('select-wallet-folder'),
+  selectWalletFile: () => ipcRenderer.invoke('select-wallet-file'),
+  startWalletService: (request) => ipcRenderer.invoke('service-start', request),
+  callWalletService: (method, params) => ipcRenderer.invoke('service-call', method, params),
+  preflightTransaction: (request) => ipcRenderer.invoke('transaction-preflight', request),
+  stopWalletService: () => ipcRenderer.invoke('service-stop'),
+  backupWallet: (request) => ipcRenderer.invoke('wallet-backup', request),
+  verifyWalletFile: () => ipcRenderer.invoke('wallet-verify-file'),
+  startMining: (request) => ipcRenderer.invoke('mining-start', request),
+  stopMining: (daemonAddress) => ipcRenderer.invoke('mining-stop', daemonAddress),
+  getMiningInfo: (request) => ipcRenderer.invoke('daemon-mining-info', request),
+  getDaemonTelemetry: () => ipcRenderer.invoke('local-daemon-telemetry'),
+  resyncLocalDaemon: () => ipcRenderer.invoke('local-daemon-resync'),
+  stopLocalDaemon: () => ipcRenderer.invoke('local-daemon-stop')
+});
