@@ -2,17 +2,62 @@
   "name": "mbg-wallet-gui",
   "version": "0.1.0",
   "description": "MBG Coin Wallet GUI for Windows",
+  "author": "Rizal and MBG Coin contributors",
   "main": "src/main.js",
   "private": true,
   "scripts": {
     "start": "electron .",
-    "test": "node --check src/main.js && node --check src/preload.js && node --check src/renderer/app.js"
+    "test": "node --check src/main.js && node --check src/preload.js && node --check src/renderer/app.js",
+    "dist:win": "electron-builder --win nsis --x64"
   },
   "devDependencies": {
-    "electron": "^31.7.7"
+    "electron": "^43.1.0",
+    "electron-builder": "^26.0.12"
   },
   "dependencies": {
     "json-bigint": "^1.0.0",
     "qrcode": "^1.5.4"
+  },
+  "build": {
+    "appId": "id.my.mbgcoin.wallet",
+    "productName": "MBG Coin Wallet",
+    "copyright": "Copyright © 2026 Rizal and MBG Coin contributors",
+    "asar": true,
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "src/**/*",
+      "package.json",
+      "node_modules/**/*"
+    ],
+    "extraResources": [
+      {
+        "from": "bin",
+        "to": "bin",
+        "filter": [
+          "*.exe"
+        ]
+      }
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "artifactName": "MBG-Coin-Wallet-Setup-${version}-${arch}.${ext}"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "MBG Coin Wallet",
+      "uninstallDisplayName": "MBG Coin Wallet"
+    }
   }
 }

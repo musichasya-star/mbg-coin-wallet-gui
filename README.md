@@ -1,8 +1,19 @@
 # MBG Coin Wallet GUI
 
-Fondasi awal aplikasi Windows sesuai [walletgui.md](../walletgui.md). Fase pertama menyediakan shell Electron, navigasi utama, tema MBG, dashboard, dan panel sinkronisasi. Fase kedua menambahkan layar unlock dan bridge IPC untuk membaca status node melalui proses utama Electron sehingga RPC tidak bergantung pada CORS renderer.
+Wallet desktop Windows untuk MBG Coin. Aplikasi menyediakan pembuatan dan import wallet, sinkronisasi, kirim/terima MBG, riwayat transaksi persisten, CPU mining lokal, Optimize/Fusion Transaction, backup, dan failover otomatis Node 1/Node 2.
 
-## Menjalankan
+## Installer Windows
+
+Unduh installer terbaru dari halaman [GitHub Releases](https://github.com/musichasya-star/mbg-coin-wallet-gui/releases).
+
+1. Unduh `MBG-Coin-Wallet-Setup-<version>-x64.exe`.
+2. Cocokkan SHA-256 dengan file checksum pada release.
+3. Jalankan installer, pilih folder instalasi, lalu buka **MBG Coin Wallet**.
+4. Windows SmartScreen dapat menampilkan peringatan karena build komunitas ini belum memakai sertifikat code-signing komersial. Pastikan file berasal dari repository resmi dan checksum cocok.
+
+Build saat ini ditujukan untuk testnet/pengujian publik. Gunakan wallet dan dana khusus pengujian sampai audit keamanan serta code-signing produksi selesai.
+
+## Menjalankan dari source
 
 ```powershell
 npm.cmd install
@@ -10,10 +21,24 @@ npm.cmd test
 npm.cmd start
 ```
 
-Saldo wallet masih mock sampai wallet core terhubung. Tinggi blok dan status node dibaca melalui IPC jika aplikasi dapat mengakses endpoint RPC yang dikonfigurasi di `src/renderer/app.js`.
+## Membuat installer
 
-Integrasi pembukaan wallet sekarang dapat menjalankan binary MBG dan command `balance` dari file wallet yang dipilih. Untuk MVP pengujian, password diteruskan hanya ke proses wallet lokal dan tidak ditulis ke log; sebelum rilis produksi harus diganti dengan wallet service/IPC native agar password tidak terlihat pada daftar proses Windows.
+```powershell
+npm.cmd run dist:win
+```
 
-Wallet baru sekarang dibuat dengan `mbgcoin-service.exe` dan dibuka sebagai service RPC persisten. GUI memanggil `getAddresses`, `getStatus`, dan `getBalance`, lalu memperbarui sinkronisasi setiap 3 detik. File wallet CLI lama tetap memiliki fallback melalui `mbgcoin-wallet.exe`, tetapi format CLI lama tidak kompatibel langsung dengan container wallet service.
+Hasil build tersedia di folder `dist/`.
 
-Import wallet mendukung mnemonic 25 kata serta private spend/view keys. Pada build MVP saat ini, secret diteruskan ke proses service lokal dan segera dibersihkan dari form; jangan gunakan build ini untuk dana produksi sebelum input rahasia dipindahkan ke native IPC/stdin yang tidak tampil pada daftar proses Windows.
+## Node publik
+
+- Primary: `https://node1.mbgcoin.my.id`
+- Failover: `https://node2.mbgcoin.my.id`
+
+Wallet berpindah otomatis ke Node 2 ketika Node 1 offline dan kembali ke Node 1 setelah pulih.
+
+## Keamanan
+
+- Password, mnemonic, dan private key tidak dikirim ke node publik.
+- Jangan membagikan file wallet, mnemonic, private spend key, atau private view key.
+- Simpan backup wallet secara offline.
+- Verifikasi checksum installer sebelum memasang aplikasi.

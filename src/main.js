@@ -13,6 +13,7 @@ const PUBLIC_NODES = ['https://node1.mbgcoin.my.id', 'https://node2.mbgcoin.my.i
 const PUBLIC_NODE_URL = PUBLIC_NODES[0];
 let activePublicNode = PUBLIC_NODE_URL;
 let primaryRetryAfter = 0;
+function bundledBinary(name) { return app.isPackaged ? path.join(process.resourcesPath, 'bin', name) : path.join(__dirname, '..', 'bin', name); }
 
 async function probePublicNode(origin) {
   const response = await fetch(`${origin}/getinfo`, { headers: { Accept: 'application/json' }, signal: AbortSignal.timeout(4000), cache: 'no-store' });
@@ -78,7 +79,7 @@ ipcMain.handle('open-transaction', async (_event, hash) => {
 });
 
 const TLS_BRIDGE_PORT = 52692;
-const defaultConfig = { rpcUrl: PUBLIC_NODE_URL, walletBinary: path.join(__dirname, '..', 'bin', 'mbgcoin-wallet.exe'), serviceBinary: path.join(__dirname, '..', 'bin', 'mbgcoin-service.exe'), daemonBinary: path.join(__dirname, '..', 'bin', 'mbgcoind.exe'), daemonAddress: PUBLIC_NODE_URL, servicePort: 52682 };
+const defaultConfig = { rpcUrl: PUBLIC_NODE_URL, walletBinary: bundledBinary('mbgcoin-wallet.exe'), serviceBinary: bundledBinary('mbgcoin-service.exe'), daemonBinary: bundledBinary('mbgcoind.exe'), daemonAddress: PUBLIC_NODE_URL, servicePort: 52682 };
 function configPath() { return path.join(app.getPath('userData'), 'mbg-wallet-config.json'); }
 function transactionCachePath() { return path.join(app.getPath('userData'), 'transaction-history.json'); }
 ipcMain.handle('config-read', async () => {
@@ -619,6 +620,8 @@ ipcMain.handle('wallet-check', async (_event, binaryPath) => {
     const output = `${result.stdout || ''}\n${result.stderr || ''}`;
     return { ok: true, message: 'Binary wallet dapat dijalankan.', help: output.slice(0, 2000) };
   } catch (error) {
+    const output = `${error.stdout || ''}\n${error.stderr || ''}`;
+    if (/MBG Coin wallet|wallet v\d+/i.test(output)) return { ok: true, message: 'Binary wallet dapat dijalankan.', help: output.slice(0, 2000) };
     if (error.code === 'ETIMEDOUT') return { ok: false, message: 'Binary wallet tidak merespons dalam 10 detik.' };
     return { ok: false, message: `Binary wallet tidak dapat dijalankan: ${error.code || error.message}` };
   }
