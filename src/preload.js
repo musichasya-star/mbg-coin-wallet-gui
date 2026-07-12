@@ -13,6 +13,7 @@ contextBridge.exposeInMainWorld('mbgWallet', {
   checkWalletBinary: (binaryPath) => ipcRenderer.invoke('wallet-check', binaryPath),
   readWalletBalance: (request) => ipcRenderer.invoke('wallet-balance', request),
   createWallet: (request) => ipcRenderer.invoke('wallet-create', request),
+  readWalletSyncMetadata: (walletFile) => ipcRenderer.invoke('wallet-sync-metadata', walletFile),
   importWallet: (request) => ipcRenderer.invoke('wallet-import', request),
   selectWalletFolder: () => ipcRenderer.invoke('select-wallet-folder'),
   selectWalletFile: () => ipcRenderer.invoke('select-wallet-file'),

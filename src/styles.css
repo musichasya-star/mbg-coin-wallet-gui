@@ -83,6 +83,12 @@ body.modal-open { overflow: hidden; }
 .address-box { width: 100%; min-height: 92px; resize: none; border: 1px solid #dce3ef; border-radius: 10px; padding: 14px; color: #17284e; background: #f8faff; font: 500 14px/1.5 ui-monospace, Consolas, monospace; overflow-wrap: anywhere; }
 .sync-notice, .ready-notice { margin-top: 18px; border-radius: 10px; padding: 12px 14px; font-size: 13px; }
 .sync-notice { color: #9a641d; background: #fff6df; }
+.sync-origin { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin-top: 18px; }
+.sync-origin > div { min-width: 0; padding: 12px; border: 1px solid #e1e8f4; border-radius: 10px; background: #f8faff; }
+.sync-origin span { display: block; margin-bottom: 5px; color: #7e8ead; font-size: 12px; }
+.sync-origin strong { display: block; overflow-wrap: anywhere; color: #17284b; font-size: 13px; }
+@media (max-width: 900px) { .sync-origin { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 560px) { .sync-origin { grid-template-columns: 1fr; } }
 .ready-notice { color: #18714d; background: #e9f8f0; }
 .button:disabled { opacity: .55; cursor: not-allowed; }
 

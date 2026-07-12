@@ -38,6 +38,30 @@ async function selectPublicNode() {
   }
 }
 
+async function getNetworkCheckpoint() {
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    const results = await Promise.allSettled(PUBLIC_NODES.map(probePublicNode));
+    const online = results.map((result, index) => result.status === 'fulfilled' ? { origin: PUBLIC_NODES[index], info: result.value } : null).filter(Boolean);
+    if (online.length === 0) throw new Error('Tidak ada node publik yang tersedia untuk menentukan checkpoint wallet.');
+    if (online.length === 1) {
+      const info = online[0].info;
+      return { consistent: true, verifiedBy: 1, height: Number(info.height || 0), timestamp: Number(info.last_block_timestamp || Math.floor(Date.now() / 1000)), topBlockHash: String(info.top_block_hash || ''), warning: 'Checkpoint hanya diverifikasi oleh satu node karena node lainnya offline.' };
+    }
+    const [first, second] = online;
+    if (Number(first.info.height || 0) === Number(second.info.height || 0) && String(first.info.top_block_hash || '') === String(second.info.top_block_hash || '')) {
+      return { consistent: true, verifiedBy: 2, height: Number(first.info.height || 0), timestamp: Number(first.info.last_block_timestamp || Math.floor(Date.now() / 1000)), topBlockHash: String(first.info.top_block_hash || ''), warning: '' };
+    }
+    if (attempt === 0) await new Promise(resolve => setTimeout(resolve, 1200));
+  }
+  return { consistent: false, verifiedBy: 2, height: 0, timestamp: 0, topBlockHash: '', warning: 'Node 1 dan Node 2 tidak konsisten. Sinkronisasi dialihkan ke genesis agar tidak ada transaksi terlewat.' };
+}
+
+async function writeWalletSyncMetadata(walletPath, metadata) {
+  const payload = { version: 1, walletFile: walletPath, ...metadata, savedAt: new Date().toISOString() };
+  await fs.writeFile(`${walletPath}.sync.json`, JSON.stringify(payload, null, 2), { encoding: 'utf8', mode: 0o600 });
+  return payload;
+}
+
 function createWindow() {
   const window = new BrowserWindow({
     width: 1440,
@@ -707,6 +731,14 @@ ipcMain.handle('wallet-balance', async (_event, request) => {
   }
 });
 
+ipcMain.handle('wallet-sync-metadata', async (_event, walletFile) => {
+  if (typeof walletFile !== 'string' || !walletFile.toLowerCase().endsWith('.wallet') || walletFile.length > 1024) return { source: 'wallet_saved_checkpoint', scanStartHeight: null, safetyBuffer: 0 };
+  try {
+    const metadata = JSON.parse(await fs.readFile(`${walletFile}.sync.json`, 'utf8'));
+    return { source: String(metadata.source || 'wallet_saved_checkpoint'), scanStartHeight: Number.isFinite(Number(metadata.scanStartHeight)) ? Number(metadata.scanStartHeight) : null, safetyBuffer: Number(metadata.safetyBuffer || 0), networkHeightAtCreation: Number(metadata.networkHeightAtCreation || 0), verifiedByNodes: Number(metadata.verifiedByNodes || 0), topBlockHash: String(metadata.topBlockHash || ''), warning: String(metadata.warning || '') };
+  } catch (_) { return { source: 'wallet_saved_checkpoint', scanStartHeight: null, safetyBuffer: 0, warning: '' }; }
+});
+
 ipcMain.handle('wallet-create', async (_event, request) => {
   const serviceBinary = request && request.serviceBinary || defaultConfig.serviceBinary;
   const requestedPath = request && request.walletPath;
@@ -718,11 +750,16 @@ ipcMain.handle('wallet-create', async (_event, request) => {
   try {
     await fs.access(serviceBinary);
     try { await fs.access(walletPath); return { ok: false, message: 'File wallet sudah ada. Gunakan nama lain.' }; } catch (_) { /* expected */ }
-    await execFileAsync(serviceBinary, ['-g', '-w', walletPath, '-p', password, '--deterministic', '--log-level', '1'], { timeout: 30000, windowsHide: true, maxBuffer: 1024 * 1024 });
+    const checkpoint = await getNetworkCheckpoint();
+    const safetyBuffer = 20;
+    const scanStartHeight = checkpoint.consistent ? Math.max(0, checkpoint.height - safetyBuffer) : 0;
+    const restoreTimestamp = scanStartHeight > 0 ? Math.max(0, checkpoint.timestamp - (checkpoint.height - scanStartHeight) * 120) : 0;
+    await execFileAsync(serviceBinary, ['-g', '-w', walletPath, '-p', password, '--deterministic', '--restore-timestamp', String(restoreTimestamp), '--log-level', '1'], { timeout: 30000, windowsHide: true, maxBuffer: 1024 * 1024 });
     const addressResult = await execFileAsync(serviceBinary, ['-w', walletPath, '-p', password, '--address', '--log-level', '1'], { timeout: 30000, windowsHide: true, maxBuffer: 1024 * 1024 });
     const output = `${addressResult.stdout || ''}\n${addressResult.stderr || ''}`;
     const address = output.match(/RMBG[A-Za-z0-9]+/);
-    return { ok: true, address: address ? address[0] : '', walletFile: walletPath, message: 'Wallet service baru berhasil dibuat.' };
+    const sync = await writeWalletSyncMetadata(walletPath, { source: checkpoint.consistent ? 'wallet_creation_height' : 'genesis_node_mismatch', networkHeightAtCreation: checkpoint.height, scanStartHeight, safetyBuffer: scanStartHeight > 0 ? safetyBuffer : 0, creationTimestamp: checkpoint.timestamp, restoreTimestamp, topBlockHash: checkpoint.topBlockHash, verifiedByNodes: checkpoint.verifiedBy, warning: checkpoint.warning });
+    return { ok: true, address: address ? address[0] : '', walletFile: walletPath, sync, message: 'Wallet service baru berhasil dibuat.' };
   } catch (error) {
     return { ok: false, message: error.code === 'ETIMEDOUT' ? 'Pembuatan wallet service melebihi batas waktu.' : 'Wallet service gagal dibuat. Periksa lokasi dan binary.' };
   }
@@ -741,18 +778,30 @@ ipcMain.handle('wallet-import', async (_event, request) => {
     await fs.access(serviceBinary);
     try { await fs.access(walletPath); return { ok: false, message: 'File wallet sudah ada. Gunakan nama lain.' }; } catch (_) { /* expected */ }
     let restoreTimestamp = 0;
+    let scanStartHeight = 0;
+    let safetyBuffer = 0;
+    let syncSource = 'genesis';
+    let checkpoint = { consistent: true, verifiedBy: 0, height: 0, timestamp: 0, topBlockHash: '', warning: '' };
     if (restoreMode === 'date') {
       const parsed = Date.parse(String(request.restoreDate || ''));
       if (!Number.isFinite(parsed) || parsed > Date.now()) return { ok: false, message: 'Restore date tidak valid atau berada di masa depan.' };
       restoreTimestamp = Math.max(0, Math.floor(parsed / 1000) - 86400);
+      checkpoint = await getNetworkCheckpoint();
+      safetyBuffer = 720;
+      if (checkpoint.consistent && checkpoint.timestamp >= restoreTimestamp) scanStartHeight = Math.max(0, checkpoint.height - Math.ceil((checkpoint.timestamp - restoreTimestamp) / 120));
+      syncSource = 'restore_date_minus_one_day';
     } else if (restoreMode === 'height') {
       const restoreHeight = Number(request.restoreHeight);
       if (!Number.isInteger(restoreHeight) || restoreHeight < 0) return { ok: false, message: 'Restore height harus berupa bilangan bulat minimal 0.' };
-      const network = await getPublicNodeInfo();
-      const currentHeight = Number(network.height || 0);
-      if (restoreHeight > currentHeight) return { ok: false, message: `Restore height melebihi height jaringan ${currentHeight}.` };
-      const topTimestamp = Number(network.last_block_timestamp || Math.floor(Date.now() / 1000));
-      restoreTimestamp = Math.max(0, topTimestamp - (currentHeight - restoreHeight) * 120 - 86400);
+      checkpoint = await getNetworkCheckpoint();
+      if (!checkpoint.consistent) { syncSource = 'genesis_node_mismatch'; }
+      else {
+        if (restoreHeight > checkpoint.height) return { ok: false, message: `Restore height melebihi height jaringan ${checkpoint.height}.` };
+        safetyBuffer = 20;
+        scanStartHeight = Math.max(0, restoreHeight - safetyBuffer);
+        restoreTimestamp = scanStartHeight > 0 ? Math.max(0, checkpoint.timestamp - (checkpoint.height - scanStartHeight) * 120) : 0;
+        syncSource = 'restore_height_minus_20';
+      }
     } else if (restoreMode !== 'genesis') return { ok: false, message: 'Restore mode tidak didukung.' };
     const args = ['-g', '-w', walletPath, '-p', password, '--restore-timestamp', String(restoreTimestamp), '--log-level', '1'];
     if (method === 'mnemonic') {
@@ -774,7 +823,8 @@ ipcMain.handle('wallet-import', async (_event, request) => {
       await fs.unlink(walletPath).catch(() => {});
       return { ok: false, address: restoredAddress, addressMismatch: true, message: 'Address hasil restore tidak cocok dengan address lama. Wallet hasil restore telah dihapus untuk keamanan.' };
     }
-    return { ok: true, address: restoredAddress, walletFile: walletPath, restoreTimestamp, addressVerified: Boolean(expectedAddress), message: expectedAddress ? 'Wallet berhasil direstore dan address terverifikasi.' : 'Wallet berhasil direstore. Verifikasi address sebelum menerima atau mengirim MBG.' };
+    const sync = await writeWalletSyncMetadata(walletPath, { source: syncSource, networkHeightAtCreation: checkpoint.height, scanStartHeight, safetyBuffer, creationTimestamp: restoreMode === 'date' ? Math.floor(Date.parse(String(request.restoreDate || '')) / 1000) : checkpoint.timestamp, restoreTimestamp, topBlockHash: checkpoint.topBlockHash, verifiedByNodes: checkpoint.verifiedBy, warning: checkpoint.warning });
+    return { ok: true, address: restoredAddress, walletFile: walletPath, restoreTimestamp, sync, addressVerified: Boolean(expectedAddress), message: expectedAddress ? 'Wallet berhasil direstore dan address terverifikasi.' : 'Wallet berhasil direstore. Verifikasi address sebelum menerima atau mengirim MBG.' };
   } catch (error) {
     return { ok: false, message: error.code === 'ETIMEDOUT' ? 'Import wallet melebihi batas waktu.' : 'Wallet gagal diimpor. Periksa mnemonic/keys dan password.' };
   }
