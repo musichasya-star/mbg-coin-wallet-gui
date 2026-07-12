@@ -43,6 +43,25 @@
       <p id="create-message" class="login-message" role="status"></p>
     </div>
   </section>
+  <div id="create-wallet-modal" class="process-modal" role="dialog" aria-modal="true" aria-labelledby="create-wallet-modal-title" aria-describedby="create-wallet-modal-message" hidden>
+    <div class="process-modal-card">
+      <div id="create-wallet-modal-icon" class="process-modal-icon loading" aria-hidden="true"><span></span></div>
+      <p class="eyebrow">MBG COIN WALLET</p>
+      <h2 id="create-wallet-modal-title">Creating your wallet</h2>
+      <p id="create-wallet-modal-message" class="muted">Mohon tunggu. Wallet sedang dibuat dan dienkripsi secara lokal.</p>
+      <div id="create-wallet-modal-details" class="process-details" hidden>
+        <span>Wallet file</span><code id="create-wallet-modal-path"></code>
+        <span>Public address</span><code id="create-wallet-modal-address"></code>
+      </div>
+      <div class="process-steps" id="create-wallet-modal-steps">
+        <span class="active">Membuat container wallet</span>
+        <span>Melindungi wallet dengan password</span>
+        <span>Memverifikasi address</span>
+      </div>
+      <button id="create-wallet-login" class="button primary full-width" hidden>Continue to login</button>
+      <button id="create-wallet-close" class="button secondary full-width" hidden>Close and try again</button>
+    </div>
+  </div>
   <section id="import-screen" class="login-screen" style="display:none">
     <div class="login-card">
       <div class="brand login-brand"><div class="brand-mark">M</div><div><strong>MBG Coin</strong><span>Import wallet</span></div></div>

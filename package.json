@@ -1,6 +1,6 @@
 {
   "name": "mbg-wallet-gui",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "MBG Coin Wallet GUI for Windows",
   "author": "Rizal and MBG Coin contributors",
   "main": "src/main.js",
